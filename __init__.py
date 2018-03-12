@@ -74,9 +74,9 @@ class Venue(Resource):
 class VenueEvents(Resource):
     def get(self, identifier):
         nodes = db_direct.data("""
-                    match (e:event)-[]-(v:venue)
-                    where v.%s= '%s'
-                    return e""" % (search_by(identifier), identifier))
+            match (e:event)-[]-(v:venue)
+            where v.%s= '%s'
+            return e""" % (search_by(identifier), identifier))
         return nodes
 
 

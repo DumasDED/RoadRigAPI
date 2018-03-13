@@ -1,4 +1,4 @@
-from flask import Flask
+from flask import Flask, request
 from flask_cors import CORS
 from flask_restful import Resource, Api
 
@@ -18,6 +18,12 @@ try:
     db_direct = Graph(password=config.db_password)
 except error.types as e:
     error.handle(e)
+
+
+class Test(Resource):
+    def get(self):
+        test_object = request.args.get('n')
+        return test_object
 
 
 class Bands(Resource):
@@ -58,6 +64,27 @@ class CityVenues(Resource):
             return n, count(e) as events, count(distinct b) as bands
             order by count(e) desc""" % name)
         nodes = [n['n'] for n in nodes]
+        return nodes
+
+
+class ViewportVenues(Resource):
+    def get(self):
+        viewport = request.args
+        nodes = db_direct.data("""
+            match (v:venue)-[]-(e:event)
+            where v.latitude > %s
+            and v.latitude < %s
+            and v.longitude > %s
+            and v.longitude < %s
+            return v, count(distinct e) as events
+            order by events desc""" % (
+                viewport['south'],
+                viewport['north'],
+                viewport['west'],
+                viewport['east']
+                    )
+            )
+        nodes = [n['v'] for n in nodes]
         return nodes
 
 
@@ -111,6 +138,8 @@ def search_by(searchvalue):
     except ValueError:
         return 'username'
 
+
+api.add_resource(Test, '/test')
 api.add_resource(Bands, '/bands')
 api.add_resource(Band, '/bands/<username>')
 api.add_resource(BandEvents, '/bands/<username>/events')
@@ -118,6 +147,7 @@ api.add_resource(CityStateList, '/cityStateList')
 api.add_resource(Cities, '/cities')
 api.add_resource(City, '/cities/<name>')
 api.add_resource(CityVenues, '/cities/<name>/venues')
+api.add_resource(ViewportVenues, '/viewport/venues')
 api.add_resource(Venues, '/venues')
 api.add_resource(Venue, '/venues/<username>')
 api.add_resource(VenueEvents, '/venues/<identifier>/events')
